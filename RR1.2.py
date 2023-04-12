@@ -57,7 +57,7 @@ coins_ls = []
 
 
 
-class coins():
+class Coins():
     def __init__(self):
         self.coin_img = pygame.image.load('gas_can.png')
 
@@ -72,7 +72,7 @@ class coins():
         self.coin_rect.center = (x, y)
     
 def generate_coins():
-    coin = coins()
+    coin = Coins()
     return coin
     
 class player:
@@ -108,6 +108,12 @@ class player:
         
     def get_rect(self):
         return self.player_rect
+    
+    def hit(self):
+        for enemy in enemies:
+            if self.player_rect.colliderect(enemy.enemy_rect):
+                return True
+        return False
 
 
 
@@ -116,7 +122,7 @@ update to add multiple cars
 maybe
 in the future
 '''
-class car:
+class Car:
     def ___init___(self, img, price):
         self.car_img = pygame.image.load(img)
         self.car_rect = self.car_img.get_rect()
@@ -132,27 +138,26 @@ class car:
         
     
 
-#make enemy object
-def enemy(x, y):
-    enemy_rect = enemy1.get_rect(left = x, top =  y)
-    windowSurface.blit(enemy1, enemy_rect)
-    return enemy_rect
+class Enemy():
+    def __init__(self, x, y):
+        self.enemy_img = pygame.image.load('Car_Red_Front.png')
+        self.enemy_rect = self.enemy_img.get_rect(left=x, top=y)
 
-#move enenmy object
-def move_enemy(x, y):
-    if x <= 2:
-        x = 830
-        y = rand.randint(50, 500)
-    return enemy(x, y)
-
-
-#check to see if player collided with enemy
-def hit(enemies, player):
-    for e in enemies:
-        if e.colliderect(player):
-            if e.left + 10 < player.right and (e.top+10 < player.bottom or e.bottom-10 > player.top):
-                return True
-    return False
+    def move_enemy(self, x_move):
+        x = self.enemy_rect.left-x_move
+        y = self.enemy_rect.top
+        if x <= 2:
+            x = 830
+            y = rand.randint(50, 500)
+        self.enemy_rect.left, self.enemy_rect.top = x, y
+        windowSurface.blit(self.enemy_img, self.enemy_rect)
+    
+    #check to see if enemy hit player  
+    def hit_player(self, player):
+        if self.enemy_rect.left + 10 < player.right and (self.enemy_rect.top+10 < player.bottom or self.enemy_rect.bottom-10 > player.top):
+            return True
+        return False
+        
 
 #ask player if they want to play again
 def play_again_msg():
@@ -173,7 +178,7 @@ def play_again_msg():
         yesRect.right = textRect.centerx - 10
         yesRect.top = textRect.bottom + 20
         
-        pygame.draw.rect(windowSurface, GREEN, pygame.Rect(yesRect.right-100, yesRect.top-10, 100, 60))
+        yes_btn = pygame.draw.rect(windowSurface, GREEN, pygame.Rect(yesRect.right-100, yesRect.top-10, 100, 60))
 
         #make no button
         no_msg = "No"
@@ -184,11 +189,13 @@ def play_again_msg():
         noRect.left = textRect.centerx + 40
         noRect.top = textRect.bottom + 20
 
-        pygame.draw.rect(windowSurface, RED, pygame.Rect(410, noRect.top-10, 100, 60))
+        no_btn = pygame.draw.rect(windowSurface, RED, pygame.Rect(410, noRect.top-10, 100, 60))
 
         windowSurface.blit(text, textRect)
         windowSurface.blit(yesText, yesRect)
         windowSurface.blit(noText, noRect)
+        
+        return yes_btn, no_btn
 
 #show the score while playing
 def display_score(score):
@@ -198,7 +205,6 @@ def display_score(score):
     textRect.right = 775
     textRect.top = 25
     windowSurface.blit(text, textRect)
-
 
 #restart the game
 def reset_game():
@@ -210,21 +216,22 @@ def reset_game():
     pos = 800
     coins_ls = []
     p1 = player()
-    
-    for i in range(8):
-        enemies.append(enemy(pos, rand.randint(50,500)))
+        
+    for _ in range(8):
+        enemies.append(Enemy(pos, rand.randint(50, 500)))
         pos += rand.randint(100,150)
+    
     return score, gas, score_added, enemies, play_x, play_y, pos, coins_ls, p1
 
 #checks if one obejct is above another
-def is_over(mouse_pos, thing):
-    if thing.collidepoint(mouse_pos):
+def is_over(thing):
+    if thing.collidepoint(pygame.mouse.get_pos()):
         return True
     return False
 
 #checks to see if something was clicked
-def is_clicked(mouse_pos, thing):
-    over = is_over(mouse_pos, thing)
+def is_clicked(thing):
+    over = is_over(thing)
     if over and pygame.mouse.get_pressed()[0]:
         return True
     return False
@@ -235,7 +242,6 @@ def full_screen():
         if pygame.key.get_pressed()[K_f] or pygame.key.get_pressed()[K_ESCAPE]:
             pygame.display.toggle_fullscreen()
             pygame.time.delay(100)
-
 
 #TODO implement pause screen
 def pause_screen():
@@ -251,34 +257,7 @@ while not gameover:
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
-    
-    #buggy
-    #TODO fix bug with funny loading screen    
-    if screen == 'studio screen':
-        count = 0
-        windowSurface.fill((0,0,0))
-        msg = "Hot Mom Gaming"
-        text = videoGameFont.render(msg, True, (int(count), int(count), int(count)), (0,0,0))
-        textRect = text.get_rect(center = (WIDTH/2, HEIGHT/2+150))
-        windowSurface.blit(text, textRect)
         
-        if not hit_255:
-            if count < 50:
-                count+= .05
-            elif count < 75:
-                count += .075
-            elif count < 254:
-                count += .1
-            else:
-                hit_255 = True
-        else:
-            if count >= 0:
-                count -=.2
-            else:
-                pygame.time.delay(1000)
-                screen = 'title'
-    
-    
     #start button screen
     if screen == 'start':
         windowSurface.blit(background, (0, 0))
@@ -287,7 +266,7 @@ while not gameover:
         windowSurface.blit(start_btn, start_btn_rect)
         
         windowSurface.blit(title, title.get_rect(center = (WIDTH/2, 200)))
-        if is_clicked(pygame.mouse.get_pos(), start_btn_rect):
+        if is_clicked(start_btn_rect):
             screen = 'playing'
     
     #playing screen
@@ -298,19 +277,17 @@ while not gameover:
         score += 1
         display_score(score)
         
-        
         #move and draw player
         p1.move_player()
         p1.draw_player()
         #move enemies left
-        for i in range(len(enemies)):
-                move = 3 + score/1000
-                if move > 10:
-                    move = 10
-                if not enemies[i].collidelist(enemies):
-                    move = -50
-                enemies[i] = move_enemy(enemies[i].left-move, enemies[i].top)
+
         
+        for enemy in enemies:
+            move = 3 + score/1000
+            if move > 10:
+                move = 10
+            enemy.move_enemy(move)
         
         pygame.draw.rect(windowSurface, WHITE, pygame.Rect(10, 10, gas*2, 20))
 
@@ -332,7 +309,7 @@ while not gameover:
             time_elapsed = 0
             
             
-        collided = hit(enemies, p1.get_rect())
+        collided = p1.hit()
         
         if collided or gas <= 0:
             screen = 'play again'
@@ -357,17 +334,18 @@ while not gameover:
                     score_added = True
                     break
             
-        play_again_msg()
+        yes_btn, no_btn = play_again_msg()
 
         mx, my = pygame.mouse.get_pos()
             
         if (event.type == pygame.MOUSEBUTTONDOWN):
-                if (290 <= mx <= 390) and (329 <= my <= 389):
+                if is_clicked(yes_btn):
+                    #reset game variables
                     screen = 'playing'
                     score, gas, score_added, enemies, play_x, play_y, pos, coins_ls, p1 = reset_game()
 
                     pygame.time.delay(100)
-                elif (410 <= mx <= 510) and (329 <= my <= 389):
+                elif is_clicked(no_btn):
                     screen = 'leaderboard'
                     pygame.time.delay(200)
     
